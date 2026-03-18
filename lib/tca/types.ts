@@ -87,6 +87,9 @@ export interface AnalysisResult {
   nodeCount: number;
   edgeCount: number;
   confidence: number;
+  verdict: "healthy" | "fragile" | "critical";
+  summary: string;
+  fixFirst: string;
   problems: Problem[];
   questions: Question[];
   solutions: Solution[];

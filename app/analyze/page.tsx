@@ -146,74 +146,73 @@ function AnalyzeContent() {
 
 function Results({ result }: { result: AnalysisResult }) {
   const confPct = Math.round(result.confidence * 100);
-  const confColor = confPct > 60 ? "#10b981" : confPct > 35 ? "#f59e0b" : "#ef4444";
+  const verdictColor = result.verdict === "healthy" ? "#10b981" : result.verdict === "fragile" ? "#f59e0b" : "#ef4444";
+  const verdictLabel = result.verdict === "healthy" ? "Healthy" : result.verdict === "fragile" ? "Fragile" : "Critical";
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="border border-zinc-800 rounded-xl p-6">
-        <h2 className="text-xl font-bold mb-4">{result.name}</h2>
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <div>
-            <div className="text-2xl font-bold" style={{ color: confColor }}>
-              {confPct}%
-            </div>
-            <div className="text-xs text-zinc-500">Confidence</div>
+      {/* Verdict + Summary */}
+      <div className="border rounded-xl p-6" style={{ borderColor: verdictColor + "40" }}>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="text-2xl font-bold" style={{ color: verdictColor }}>
+            {verdictLabel}
           </div>
-          <div>
-            <div className="text-2xl font-bold">{result.nodeCount}</div>
-            <div className="text-xs text-zinc-500">Nodes</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold">{result.edgeCount}</div>
-            <div className="text-xs text-zinc-500">Edges</div>
+          <div className="text-zinc-500 text-sm">
+            {confPct}% confidence &middot; {result.nodeCount} nodes &middot; {result.edgeCount} edges
           </div>
         </div>
-        <div className="flex gap-4 text-sm text-zinc-400">
-          <span>{result.health.cycles} cycles</span>
-          <span>{result.health.bridges} bridges</span>
-          <span>{result.health.isolated} isolated</span>
-        </div>
+        <h2 className="text-lg font-semibold mb-2">{result.name}</h2>
+        <p className="text-sm text-zinc-300 leading-relaxed">{result.summary}</p>
       </div>
+
+      {/* Fix First */}
+      {result.solutions.length > 0 && (
+        <div className="bg-zinc-900 border border-emerald-900 rounded-xl p-5">
+          <div className="text-xs font-semibold text-emerald-500 mb-2 uppercase tracking-wider">Fix this first</div>
+          <p className="text-sm text-zinc-200 leading-relaxed">{result.fixFirst}</p>
+        </div>
+      )}
 
       {/* Problems */}
       {result.problems.length > 0 && (
         <div className="border border-zinc-800 rounded-xl p-6">
-          <h3 className="font-semibold mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-red-500" />
+          <h3 className="font-semibold mb-4">
             Problems ({result.problems.length})
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {result.problems.map((p, i) => (
-              <div key={i} className="border-l-2 pl-3 py-1" style={{
+              <div key={i} className="border-l-2 pl-4 py-1" style={{
                 borderColor: p.type === "contradiction" ? "#ef4444" :
                   p.type === "feedback_trap" ? "#f59e0b" :
                   p.type === "star_topology" ? "#8b5cf6" : "#6b7280"
               }}>
-                <div className="text-xs font-mono text-zinc-500 mb-0.5">
-                  {p.type.replace("_", " ").toUpperCase()}
+                <div className="text-xs font-semibold mb-1 uppercase tracking-wider" style={{
+                  color: p.type === "contradiction" ? "#ef4444" :
+                    p.type === "feedback_trap" ? "#f59e0b" :
+                    p.type === "star_topology" ? "#8b5cf6" : "#6b7280"
+                }}>
+                  {p.type === "contradiction" ? "Contradiction" :
+                   p.type === "feedback_trap" ? "Feedback Trap" :
+                   p.type === "star_topology" ? "Bottleneck" :
+                   p.type === "dead_end" ? "Dead End" : "Isolated"}
                 </div>
-                <div className="text-sm">{p.description}</div>
+                <div className="text-sm text-zinc-300 leading-relaxed">{p.description}</div>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Questions (SEEKS) */}
+      {/* Unproven Assumptions */}
       {result.questions.length > 0 && (
         <div className="border border-zinc-800 rounded-xl p-6">
-          <h3 className="font-semibold mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-500" />
-            Unproven ({result.questions.length})
+          <h3 className="font-semibold mb-4">
+            Unproven Assumptions ({result.questions.length})
           </h3>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {result.questions.map((q, i) => (
-              <div key={i} className="text-sm text-zinc-300">
-                <span className="text-zinc-500">{q.from}</span>
-                {" \u2192 "}
-                <span className="text-zinc-500">{q.to}</span>
-                <span className="text-zinc-600 ml-2 text-xs">SEEKS</span>
+              <div key={i} className="text-sm text-zinc-300 leading-relaxed border-l-2 border-blue-800 pl-4 py-1">
+                {q.description}
               </div>
             ))}
           </div>
@@ -221,19 +220,20 @@ function Results({ result }: { result: AnalysisResult }) {
       )}
 
       {/* Solutions */}
-      {result.solutions.length > 0 && (
+      {result.solutions.length > 1 && (
         <div className="border border-zinc-800 rounded-xl p-6">
-          <h3 className="font-semibold mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            Solutions ({result.solutions.length})
+          <h3 className="font-semibold mb-4">
+            All Recommendations ({result.solutions.length})
           </h3>
           <div className="space-y-3">
             {result.solutions.map((s, i) => (
               <div key={i} className="flex items-start gap-3">
-                <span className="text-xs font-mono text-emerald-500 mt-0.5 shrink-0">
-                  {Math.round(s.confidence * 100)}%
+                <span className="text-xs font-mono mt-0.5 shrink-0 w-6 text-right" style={{
+                  color: s.confidence >= 0.8 ? "#10b981" : s.confidence >= 0.6 ? "#f59e0b" : "#6b7280"
+                }}>
+                  {i + 1}.
                 </span>
-                <div className="text-sm text-zinc-300">{s.description}</div>
+                <div className="text-sm text-zinc-300 leading-relaxed">{s.description}</div>
               </div>
             ))}
           </div>
