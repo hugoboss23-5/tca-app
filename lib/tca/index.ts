@@ -1,5 +1,11 @@
 export { EdgeType, EDGE_TYPES, EDGE_COLORS, EDGE_DESCRIPTIONS } from "./types";
-export type { GraphInput, AnalysisResult, Problem, Question, Solution } from "./types";
+export type { GraphInput, AnalysisResult, Problem, Question, Solution, Feature, Intervention } from "./types";
 export { TopologicalGraph } from "./graph";
-export { analyzeGraph, analyzeTemplate, getTemplateList } from "./engine";
+export { analyzeGraph, analyzeTemplate, analyzeAnalysis, getTemplateList } from "./engine";
 export { TEMPLATES } from "./templates";
+export { route, routeFromStructure, GATES, GATE_TO_EDGE, EDGE_TO_GATE } from "./router";
+export type { Gate, GateWeights } from "./router";
+export { spread, findEntryNodes } from "./activation";
+export type { ActivatedNode } from "./activation";
+export { groundAnalysis, KDGroundingSource } from "./grounding";
+export type { GroundingSource, GroundingResult, EdgeGrounding, GroundingEvidence } from "./grounding";

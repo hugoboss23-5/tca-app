@@ -229,6 +229,18 @@ export function groundingRatio(nodes: NodeMap): number {
   return total > 0 ? grounded / total : 0;
 }
 
+// --- Edge Type Diversity ---
+
+export function edgeTypeDiversity(nodes: NodeMap): number {
+  const typesPresent = new Set<EdgeType>();
+  for (const node of nodes.values()) {
+    for (const rels of Object.values(node.edges)) {
+      for (const rel of rels) typesPresent.add(rel.edgeType);
+    }
+  }
+  return typesPresent.size / Object.values(EdgeType).length;
+}
+
 // --- Confidence ---
 
 export interface ConfidenceReport {
@@ -236,13 +248,27 @@ export interface ConfidenceReport {
   pathDiversity: number;
   cyclePenalty: number;
   groundingRatio: number;
+  edgeTypeDiversity: number;
+  mode: "standard" | "physics";
 }
 
-const W_PATH = 0.4;
-const W_CYCLE = 0.3;
+// Standard weights: penalize cycles, reward grounding.
+const W_PATH = 0.3;
+const W_CYCLE = 0.2;
 const W_GROUNDING = 0.3;
+const W_CONVERGENCE = 0.2;
 
-export function computeConfidence(nodes: NodeMap): ConfidenceReport {
+// Physics weights: reward cycles (self-consistency), reward edge diversity.
+const W_PATH_PHYS = 0.20;
+const W_CYCLE_PHYS = 0.15;
+const W_GROUNDING_PHYS = 0.25;
+const W_CONVERGENCE_PHYS = 0.15;
+const W_RICHNESS_PHYS = 0.25;
+
+export function computeConfidence(
+  nodes: NodeMap,
+  mode: "standard" | "physics" = "standard"
+): ConfidenceReport {
   const pd = 0; // No source/target for general analysis
   const cycles = cycleDetection(nodes);
   const totalNodes = nodes.size;
@@ -257,13 +283,36 @@ export function computeConfidence(nodes: NodeMap): ConfidenceReport {
   }
 
   const gr = groundingRatio(nodes);
-  const confidence = pd * W_PATH + (1 - cycleRatio) * W_CYCLE + gr * W_GROUNDING;
+  const etd = edgeTypeDiversity(nodes);
+  // Convergence speed placeholder (1.0 = instant, no L4 temporal yet)
+  const cs = 1.0;
+
+  let confidence: number;
+
+  if (mode === "physics") {
+    // Physics: cycles are self-consistency (bonus), edge diversity = richness.
+    confidence =
+      pd * W_PATH_PHYS +
+      cycleRatio * W_CYCLE_PHYS +         // BONUS not penalty
+      gr * W_GROUNDING_PHYS +
+      cs * W_CONVERGENCE_PHYS +
+      etd * W_RICHNESS_PHYS;
+  } else {
+    // Standard: cycles penalized as circular reasoning.
+    confidence =
+      pd * W_PATH +
+      (1 - cycleRatio) * W_CYCLE +
+      gr * W_GROUNDING +
+      cs * W_CONVERGENCE;
+  }
 
   return {
     confidence,
     pathDiversity: pd,
     cyclePenalty: cycleRatio,
     groundingRatio: gr,
+    edgeTypeDiversity: etd,
+    mode,
   };
 }
 

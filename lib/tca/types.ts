@@ -52,6 +52,7 @@ export interface GraphInput {
   name: string;
   nodes: { id: string; label: string }[];
   edges: { source: string; target: string; type: string; weight?: number }[];
+  mode?: "standard" | "physics";
 }
 
 export interface Problem {
@@ -81,9 +82,24 @@ export interface Solution {
   confidence: number;
 }
 
+export interface Intervention {
+  action: "flag_uncertainty" | "request_grounding" | "rerouted" | "warning";
+  reason: string;
+}
+
+export interface Feature {
+  type: "self_consistency" | "causal_boundary" | "boundary_condition";
+  description: string;
+  nodes?: string[];
+  labels?: string[];
+  from?: string;
+  to?: string;
+}
+
 export interface AnalysisResult {
   graphId: string;
   name: string;
+  mode: "standard" | "physics";
   nodeCount: number;
   edgeCount: number;
   confidence: number;
@@ -93,11 +109,17 @@ export interface AnalysisResult {
   problems: Problem[];
   questions: Question[];
   solutions: Solution[];
+  features: Feature[];
   health: {
     cycles: number;
     bridges: number;
     isolated: number;
   };
+  gateWeights: Record<string, number>;
+  structuralGateWeights: Record<string, number>;
+  edgeTypeDistribution: Record<string, number>;
+  activatedNodes: { id: string; label: string; activation: number }[];
+  metacognition: Intervention[];
   nodes: { id: string; label: string }[];
   edges: { source: string; target: string; type: string; weight: number }[];
 }
